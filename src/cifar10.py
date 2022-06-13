@@ -116,8 +116,8 @@ def main():
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
     parser.add_argument('--weight_decay', default=5e-4, type=float)
-    parser.add_argument('--pct_start', default=0.1, type=float)
-    parser.add_argument('--three_phase', default=True, type=bool)
+    parser.add_argument('--pct_start', default=0.3, type=float)
+    parser.add_argument('--three_phase', default=False, type=bool)
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_loss')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')

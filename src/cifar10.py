@@ -101,7 +101,7 @@ def main():
     # wandb args
     parser.add_argument('--wandb_name', default=None, type=str)
     parser.add_argument('--wandb_project', default='lm_labels_cifar10', type=str)
-    parser.add_argument('--wandb_entity', default='chrisxx', type=str)
+    parser.add_argument('--wandb_entity', default='dfstransformer', type=str)
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
     parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args

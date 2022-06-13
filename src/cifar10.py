@@ -61,28 +61,16 @@ class OurLitResnet(LightningModule):
         acc = accuracy(preds, true_label)
 
         if stage:
-            self.log(f"{stage}_loss", loss, prog_bar=True)
-            self.log(f"{stage}_acc", acc, prog_bar=True)
+            self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_acc", acc, prog_bar=True, on_step=False, on_epoch=True)
 
         return {'loss': loss, 'acc': acc}
 
     def validation_step(self, batch, batch_idx):
         return self.evaluate(batch, "val")
 
-    def validation_epoch_end(self, outputs):
-        mean_loss = torch.mean(torch.stack([o['loss'] for o in outputs]))
-        self.log('mean_val_loss', mean_loss)
-        mean_acc = torch.mean(torch.stack([o['acc'] for o in outputs]))
-        self.log('mean_val_acc', mean_acc)
-
     def test_step(self, batch, batch_idx):
         return self.evaluate(batch, "test")
-
-    def test_epoch_end(self, outputs):
-        mean_loss = torch.mean(torch.stack([o['loss'] for o in outputs]))
-        self.log('mean_test_loss', mean_loss)
-        mean_acc = torch.mean(torch.stack([o['acc'] for o in outputs]))
-        self.log('mean_test_acc', mean_acc)
 
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(
@@ -120,18 +108,18 @@ def main():
     parser.add_argument('--embedding_file', default='embeddings/cifar_10_davinci-001.json')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
-    parser.add_argument('--num_workers', default=0, type=int)
+    parser.add_argument('--num_workers', default=6, type=int)
     # lightingmodule args
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     # trainer args
-    parser.add_argument('--monitor', type=str, default='mean_val_loss')
+    parser.add_argument('--monitor', type=str, default='val_loss')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
     parser.add_argument('--checkpoint_save_top_k', type=int, default=2)
     parser.add_argument('--early_stopping_mode', type=str, default='min')
-    parser.add_argument('--early_stopping_patience', type=int, default=50)
+    parser.add_argument('--early_stopping_patience', type=int, default=25)
     parser.add_argument('--my_log_every_n_steps', type=int, default=1)
     parser.add_argument('--my_accelerator', type=str, default='gpu')
     parser.add_argument('--my_max_epochs', type=int, default=200)
@@ -220,10 +208,13 @@ def main():
     # ------------
     checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir+'/%s'%wandb_logger.experiment.name, 
                                           save_top_k=args.checkpoint_save_top_k,
-                                          monitor=args.monitor)
+                                          monitor=args.monitor,
+                                          save_on_train_epoch_end=False)
+
     es_callback = EarlyStopping(monitor=args.monitor, 
                                 mode=args.early_stopping_mode, 
-                                patience=args.early_stopping_patience)
+                                patience=args.early_stopping_patience,
+                                check_on_train_epoch_end=False)
     lr_monitor = LearningRateMonitor()
 
     trainer = pl.Trainer.from_argparse_args(args, logger=wandb_logger,

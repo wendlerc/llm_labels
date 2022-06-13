@@ -1,0 +1,11 @@
+pandas
+torch>=1.6, <1.9
+torchvision
+ipython[notebook]
+seaborn
+pytorch-lightning>=1.4
+torchmetrics>=0.6
+lightning-bolts
+openai
+seaborn
+

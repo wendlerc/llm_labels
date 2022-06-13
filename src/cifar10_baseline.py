@@ -16,7 +16,6 @@ from torch.optim.lr_scheduler import OneCycleLR
 from torchmetrics.functional import accuracy
 import json
 
-
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
@@ -34,12 +33,12 @@ def create_model(n_outputs):
     return model
 
 
-class OurLitResnet(LightningModule):
-    def __init__(self, class_embeddings_tensor, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
+class LitResnet(LightningModule):
+    def __init__(self, n_classes=10, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9,
+                 n_train=45000):
         super().__init__()
         self.save_hyperparameters()
-        self.model = create_model(class_embeddings_tensor.shape[1])
-        self.class_embeddings_tensor = class_embeddings_tensor
+        self.model = create_model(n_classes)
         self.n_train = n_train
 
     def forward(self, x):
@@ -47,19 +46,15 @@ class OurLitResnet(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = F.mse_loss(embedding, y, reduction='sum')
+        loss = F.cross_entropy(self(x), y)
         self.log("train_loss", loss)
         return loss
 
     def evaluate(self, batch, stage=None):
         x, y = batch
-        embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = F.mse_loss(embedding, y, reduction='sum')
-        preds = torch.argmax(embedding @ self.class_embeddings_tensor.T, dim=1)
-        true_label = torch.argmax(y @ self.class_embeddings_tensor.T, dim=1)
-        acc = accuracy(preds, true_label)
-
+        preds = self(x)  # go onto unit sphere where gpt embeddings live
+        loss = F.cross_entropy(preds, y)
+        acc = accuracy(torch.argmax(preds, dim=1), y)
         if stage:
             self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
             self.log(f"{stage}_acc", acc, prog_bar=True, on_step=False, on_epoch=True)
@@ -84,10 +79,8 @@ class OurLitResnet(LightningModule):
             "scheduler": OneCycleLR(
                 optimizer,
                 self.hparams.max_lr,
-                pct_start=self.hparams.pct_start,
                 epochs=self.trainer.max_epochs,
                 steps_per_epoch=steps_per_epoch,
-                three_phase=self.hparams.three_phase,
             ),
             "interval": "step",
         }
@@ -105,19 +98,17 @@ def main():
     parser.add_argument('--wandb_project', default='lm_labels_cifar10', type=str)
     parser.add_argument('--wandb_entity', default='dfstransformer', type=str)
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
-    parser.add_argument('--group', default=None)# this is useful to organize the runs
+    parser.add_argument('--group', default='baseline')  # this is useful to organize the runs
     # datamodule args
-    parser.add_argument('--embedding_file', default='embeddings/cifar_10_davinci-001.json')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)
     # lightingmodule args
+    parser.add_argument('--n_classes', default=10, type=int)
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
     parser.add_argument('--weight_decay', default=5e-4, type=float)
-    parser.add_argument('--pct_start', default=0.1, type=float)
-    parser.add_argument('--three_phase', default=True, type=bool)
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_loss')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
@@ -130,31 +121,14 @@ def main():
     parser.add_argument('--upload', action='store_true')
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
-    
-    pl.seed_everything(args.seed)    
+
+    pl.seed_everything(args.seed)
     # ------------
     # data
     # ------------
-    with open(args.embedding_file, 'r') as f:
-        class_embeddings = json.load(f)
 
-    classids = {'airplane': 0,
-                'automobile': 1,
-                'bird': 2,
-                'cat': 3,
-                'deer': 4,
-                'dog': 5,
-                'frog': 6,
-                'horse': 7,
-                'ship': 8,
-                'truck': 9}
-    classlabels = {value: key for key, value in classids.items()}
 
-    def target_transform(target):
-        return torch.tensor(class_embeddings[classlabels[target]])
-
-    dataset = CIFAR10(args.data_path, target_transform=target_transform, download=True)
-    n_outputs = dataset[0][1].shape[0]
+    dataset = CIFAR10(args.data_path, download=True)
 
     train_transforms = torchvision.transforms.Compose(
         [
@@ -180,45 +154,40 @@ def main():
         test_transforms=test_transforms,
         val_transforms=test_transforms,
     )
-    cifar10_dm.EXTRA_ARGS['target_transform'] = target_transform
 
     # ------------
     # model
     # ------------
-    class_embeddings_tensor = torch.tensor([class_embeddings[label] for idx, label in classlabels.items()])
-    if args.my_accelerator == 'gpu':
-        class_embeddings_tensor = class_embeddings_tensor.to('cuda:0')
-    model = OurLitResnet(class_embeddings_tensor,
-                         pct_start=args.pct_start,
-                         three_phase=args.three_phase,
-                         lr=args.lr,
-                         momentum=args.momentum,
-                         weight_decay=args.weight_decay,
-                         batch_size=args.batch_size)
+
+    model = LitResnet(n_classes=args.n_classes,
+                      lr=args.lr,
+                      momentum=args.momentum,
+                      weight_decay=args.weight_decay,
+                      batch_size=args.batch_size)
 
     # ------------
-    # wandb 
+    # wandb
     # ------------
-    wandb_logger = WandbLogger(entity=args.wandb_entity, 
-                               project=args.wandb_project, 
+    wandb_logger = WandbLogger(entity=args.wandb_entity,
+                               project=args.wandb_project,
                                name=args.wandb_name,
                                config=args)
     run = wandb_logger.experiment
     # save file to artifact folder
-    result_dir = args.checkpoint_dir+'/%s/'%wandb_logger.experiment.name 
+    result_dir = args.checkpoint_dir + '/%s/' % wandb_logger.experiment.name
     os.makedirs(result_dir, exist_ok=True)
-    copyfile(sys.argv[0], result_dir+sys.argv[0].split('/')[-1])
-        
+    copyfile(sys.argv[0], result_dir + sys.argv[0].split('/')[-1])
+
     # ------------
     # training
     # ------------
-    checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir+'/%s'%wandb_logger.experiment.name, 
+    checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir + '/%s' % wandb_logger.experiment.name,
                                           save_top_k=args.checkpoint_save_top_k,
                                           monitor=args.monitor,
                                           save_on_train_epoch_end=False)
 
-    es_callback = EarlyStopping(monitor=args.monitor, 
-                                mode=args.early_stopping_mode, 
+    es_callback = EarlyStopping(monitor=args.monitor,
+                                mode=args.early_stopping_mode,
                                 patience=args.early_stopping_patience,
                                 check_on_train_epoch_end=False)
     lr_monitor = LearningRateMonitor()
@@ -240,11 +209,11 @@ def main():
     print(result)
     if args.upload:
         print("uploading model...")
-        #store config and model
-        checkpoint_callback.to_yaml(checkpoint_callback.dirpath+'/checkpoint_callback.yaml')
-        with open(checkpoint_callback.dirpath+'/config.yaml', 'w') as f:
+        # store config and model
+        checkpoint_callback.to_yaml(checkpoint_callback.dirpath + '/checkpoint_callback.yaml')
+        with open(checkpoint_callback.dirpath + '/config.yaml', 'w') as f:
             yaml.dump(run.config.as_dict(), f, default_flow_style=False)
-        
+
         trained_model_artifact = wandb.Artifact(run.name, type="model", description="trained OurLitResnet")
         trained_model_artifact.add_dir(checkpoint_callback.dirpath)
         run.log_artifact(trained_model_artifact)

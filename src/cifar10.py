@@ -115,6 +115,7 @@ def main():
     parser.add_argument('--wandb_project', default='lm_labels_cifar10', type=str)
     parser.add_argument('--wandb_entity', default='chrisxx', type=str)
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
+    parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args
     parser.add_argument('--embedding_file', default='embeddings/cifar_10_davinci-001.json')
     parser.add_argument('--data_path', default='data/datasets/', type=str)

@@ -47,6 +47,7 @@ class OurLitResnet(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        assert self.model.training
         embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
         loss = F.mse_loss(embedding, y, reduction='sum')
         self.log("train_loss", loss)
@@ -54,6 +55,7 @@ class OurLitResnet(LightningModule):
 
     def evaluate(self, batch, stage=None):
         x, y = batch
+        assert not self.model.training
         embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
         loss = F.mse_loss(embedding, y, reduction='sum')
         preds = torch.argmax(embedding @ self.class_embeddings_tensor.T, dim=1)
@@ -130,8 +132,8 @@ def main():
     parser.add_argument('--upload', action='store_true')
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
-    
-    pl.seed_everything(args.seed)    
+
+    pl.seed_everything(args.seed)
     # ------------
     # data
     # ------------
@@ -197,28 +199,28 @@ def main():
                          batch_size=args.batch_size)
 
     # ------------
-    # wandb 
+    # wandb
     # ------------
-    wandb_logger = WandbLogger(entity=args.wandb_entity, 
-                               project=args.wandb_project, 
+    wandb_logger = WandbLogger(entity=args.wandb_entity,
+                               project=args.wandb_project,
                                name=args.wandb_name,
                                config=args)
     run = wandb_logger.experiment
     # save file to artifact folder
-    result_dir = args.checkpoint_dir+'/%s/'%wandb_logger.experiment.name 
+    result_dir = args.checkpoint_dir+'/%s/'%wandb_logger.experiment.name
     os.makedirs(result_dir, exist_ok=True)
     copyfile(sys.argv[0], result_dir+sys.argv[0].split('/')[-1])
-        
+
     # ------------
     # training
     # ------------
-    checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir+'/%s'%wandb_logger.experiment.name, 
+    checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir+'/%s'%wandb_logger.experiment.name,
                                           save_top_k=args.checkpoint_save_top_k,
                                           monitor=args.monitor,
                                           save_on_train_epoch_end=False)
 
-    es_callback = EarlyStopping(monitor=args.monitor, 
-                                mode=args.early_stopping_mode, 
+    es_callback = EarlyStopping(monitor=args.monitor,
+                                mode=args.early_stopping_mode,
                                 patience=args.early_stopping_patience,
                                 check_on_train_epoch_end=False)
     lr_monitor = LearningRateMonitor()
@@ -244,7 +246,7 @@ def main():
         checkpoint_callback.to_yaml(checkpoint_callback.dirpath+'/checkpoint_callback.yaml')
         with open(checkpoint_callback.dirpath+'/config.yaml', 'w') as f:
             yaml.dump(run.config.as_dict(), f, default_flow_style=False)
-        
+
         trained_model_artifact = wandb.Artifact(run.name, type="model", description="trained OurLitResnet")
         trained_model_artifact.add_dir(checkpoint_callback.dirpath)
         run.log_artifact(trained_model_artifact)

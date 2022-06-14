@@ -25,12 +25,4 @@ class OutputCE(nn.Module):
         return loss
 
 
-class OutputSmoothing(nn.Module):
-    def __init__(self, class_embeddings):
-        super().__init__()
-        self.class_embeddings_tensor = class_embeddings
-
-    def forward(self, pred_emb, label_emb):
-        probas = F.softmax(label_emb @ self.class_embeddings_tensor.T, dim=1)
-        logits = pred_emb @ self.class_embeddings_tensor.T
 

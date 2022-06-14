@@ -28,7 +28,7 @@ def main():
     parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args
     parser.add_argument('--dataset', default='cifar10', type=str)
-    parser.add_argument('--embedding_file_pattern', default='embeddings/%s_davinci-001.json')
+    parser.add_argument('--embeddings', default='davinci', help='ada, babbage, curie, davinci')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)

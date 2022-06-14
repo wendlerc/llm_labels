@@ -3,7 +3,8 @@ import torch
 
 
 def get_cifar10_output_embeddings(args):
-    with open(args.embedding_file_pattern % 'cifar10', 'r') as f:
+    embedding_file = 'embeddings/%s_%s-001.json'%(args.dataset, args.embeddings)
+    with open(embedding_file, 'r') as f:
         class_embeddings = json.load(f)
 
     classids = {'airplane': 0,
@@ -24,7 +25,8 @@ def get_cifar10_output_embeddings(args):
 
 
 def get_cifar100_output_embeddings(args):
-    with open(args.embedding_file_pattern % 'cifar100', 'r') as f:
+    embedding_file = 'embeddings/%s_%s-001.json' % (args.dataset, args.embeddings)
+    with open(embedding_file, 'r') as f:
         class_embeddings = json.load(f)
 
     labels = ['beaver', 'dolphin', 'otter', 'seal', 'whale',

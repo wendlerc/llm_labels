@@ -38,6 +38,7 @@ def get_our_module_and_dataloader(args):
 
     model = OurLitResnet(class_embeddings_tensor,
                          loss=loss,
+                         optimizer=args.optimizer,
                          pct_start=args.pct_start,
                          three_phase=args.three_phase,
                          lr=args.lr,

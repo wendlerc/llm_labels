@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)
+    parser.add_argument('--optimizer', default='sgd', type=str)
     # lightingmodule args
     parser.add_argument('--method', default='ours', type=str)
     parser.add_argument('--lr', default=0.05, type=float)
@@ -46,7 +47,7 @@ def main():
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
     parser.add_argument('--checkpoint_save_top_k', type=int, default=2)
     parser.add_argument('--early_stopping_mode', type=str, default='min')
-    parser.add_argument('--early_stopping_patience', type=int, default=25)
+    parser.add_argument('--early_stopping_patience', type=int, default=10000)
     parser.add_argument('--my_log_every_n_steps', type=int, default=1)
     parser.add_argument('--my_accelerator', type=str, default='gpu')
     parser.add_argument('--my_max_epochs', type=int, default=200)
@@ -62,6 +63,7 @@ def main():
         model, datamodule = get_baseline_module_and_dataloader(args)
     else:
         raise ValueError("unrecognized option %s for --method, please use 'ours' or 'baseline'" % args.method)
+    print(model)
     # ------------
     # wandb
     # ------------

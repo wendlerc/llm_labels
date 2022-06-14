@@ -24,7 +24,7 @@ def my_create_model(n_outputs):
 
 
 class OurLitResnet(LightningModule):
-    def __init__(self, class_embeddings_tensor, loss, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
+    def __init__(self, class_embeddings_tensor, loss, optimizer='sgd', three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
         super().__init__()
         self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor'])
         self.model = my_create_model(class_embeddings_tensor.shape[1])
@@ -68,12 +68,22 @@ class OurLitResnet(LightningModule):
         return self.evaluate(batch, "test")
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(
-            self.parameters(),
-            lr=self.hparams.lr,
-            momentum=self.hparams.momentum,
-            weight_decay=self.hparams.weight_decay,
-        )
+        if self.hparams.optimizer == 'sgd':
+            optimizer = torch.optim.SGD(
+                self.parameters(),
+                lr=self.hparams.lr,
+                momentum=self.hparams.momentum,
+                weight_decay=self.hparams.weight_decay,
+            )
+        elif self.hparams.optimizer == 'adam':
+            optimizer = torch.optim.Adam(
+                self.parameters(),
+                lr=self.hparams.lr,
+                weight_decay=self.hparams.weight_decay,
+            )
+        else:
+            raise ValueError(f"Unknown optimizer {self.hparams.optimizer}")
+
         steps_per_epoch = self.n_train // self.hparams.batch_size
         scheduler_dict = {
             "scheduler": OneCycleLR(

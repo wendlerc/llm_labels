@@ -9,6 +9,7 @@ class OutputMSE(nn.Module):
         self.reduction = reduction
 
     def forward(self, pred_emb, label_emb):
+        pred_emb = F.normalize(pred_emb)
         return F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
 
 
@@ -22,3 +23,14 @@ class OutputCE(nn.Module):
         y = torch.argmax(label_emb @ self.class_embeddings_tensor.T, dim=1)
         loss = F.cross_entropy(logits, y)
         return loss
+
+
+class OutputSmoothing(nn.Module):
+    def __init__(self, class_embeddings):
+        super().__init__()
+        self.class_embeddings_tensor = class_embeddings
+
+    def forward(self, pred_emb, label_emb):
+        probas = F.softmax(label_emb @ self.class_embeddings_tensor.T, dim=1)
+        logits = pred_emb @ self.class_embeddings_tensor.T
+

@@ -26,6 +26,8 @@ import yaml
 import sys
 from shutil import copyfile
 
+from loss import OutputCE, OutputMSE
+
 
 def create_model(n_outputs):
     model = torchvision.models.resnet18(pretrained=False, num_classes=n_outputs)
@@ -35,12 +37,13 @@ def create_model(n_outputs):
 
 
 class OurLitResnet(LightningModule):
-    def __init__(self, class_embeddings_tensor, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
+    def __init__(self, class_embeddings_tensor, loss, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
         super().__init__()
         self.save_hyperparameters()
         self.model = create_model(class_embeddings_tensor.shape[1])
         self.class_embeddings_tensor = class_embeddings_tensor
         self.n_train = n_train
+        self.loss = loss
 
     def forward(self, x):
         return self.model(x)
@@ -49,7 +52,7 @@ class OurLitResnet(LightningModule):
         x, y = batch
         assert self.model.training
         embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = F.mse_loss(embedding, y, reduction='sum')
+        loss = self.loss(embedding, y)
         self.log("train_loss", loss)
         return loss
 
@@ -57,7 +60,7 @@ class OurLitResnet(LightningModule):
         x, y = batch
         assert not self.model.training
         embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = F.mse_loss(embedding, y, reduction='sum')
+        loss = self.loss(embedding, y)
         preds = torch.argmax(embedding @ self.class_embeddings_tensor.T, dim=1)
         true_label = torch.argmax(y @ self.class_embeddings_tensor.T, dim=1)
         acc = accuracy(preds, true_label)
@@ -120,6 +123,7 @@ def main():
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--pct_start', default=0.3, type=float)
     parser.add_argument('--three_phase', default=False, type=bool)
+    parser.add_argument('--loss', default='mse', type=str)
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_loss')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
@@ -190,7 +194,16 @@ def main():
     class_embeddings_tensor = torch.tensor([class_embeddings[label] for idx, label in classlabels.items()])
     if args.my_accelerator == 'gpu':
         class_embeddings_tensor = class_embeddings_tensor.to('cuda:0')
+
+    if args.loss == 'mse':
+        loss = OutputMSE()
+    elif args.loss == 'ce':
+        loss = OutputCE(class_embeddings_tensor)
+    else:
+        raise ValueError("unrecognized option %s, please use 'mse' or 'ce'"%args.loss)
+
     model = OurLitResnet(class_embeddings_tensor,
+                         loss=loss,
                          pct_start=args.pct_start,
                          three_phase=args.three_phase,
                          lr=args.lr,

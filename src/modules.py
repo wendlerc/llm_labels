@@ -14,11 +14,20 @@ def create_model(n_outputs):
     return model
 
 
+def my_create_model(n_outputs):
+    model = torchvision.models.resnet18(pretrained=False, num_classes=n_outputs)
+    model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+    model.maxpool = nn.Identity()
+    model.avgpool = nn.Identity()
+    model.fc = nn.Linear(8192, n_outputs)
+    return model
+
+
 class OurLitResnet(LightningModule):
     def __init__(self, class_embeddings_tensor, loss, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
         super().__init__()
         self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor'])
-        self.model = create_model(class_embeddings_tensor.shape[1])
+        self.model = my_create_model(class_embeddings_tensor.shape[1])
         self.class_embeddings_tensor = class_embeddings_tensor
         self.n_train = n_train
         self.loss = loss

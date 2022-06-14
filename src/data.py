@@ -5,10 +5,7 @@ from pl_bolts.datamodules import CIFAR10DataModule
 from pl_bolts.transforms.dataset_normalizations import cifar10_normalization
 
 
-def get_cifar10_datamodule(class_embeddings, classlabels, args):
-    def target_transform(target):
-        return torch.tensor(class_embeddings[classlabels[target]])
-
+def get_cifar10_datamodule(args, target_transform=None):
     train_transforms = torchvision.transforms.Compose(
         [
             torchvision.transforms.RandomCrop(32, padding=4),
@@ -33,17 +30,12 @@ def get_cifar10_datamodule(class_embeddings, classlabels, args):
         test_transforms=test_transforms,
         val_transforms=test_transforms,
     )
-    cifar10_dm.EXTRA_ARGS['target_transform'] = target_transform
+    if target_transform is not None:
+        cifar10_dm.EXTRA_ARGS['target_transform'] = target_transform
     return cifar10_dm
 
 
-def get_cifar100_datamodule(class_embeddings, classlabels, args):
-    def target_transform(target):
-        return torch.tensor(class_embeddings[classlabels[target]])
-
-    dataset = CIFAR100(args.data_path, target_transform=target_transform, download=True)
-    n_outputs = dataset[0][1].shape[0]
-
+def get_cifar100_datamodule(args, target_transform=None):
     train_transforms = torchvision.transforms.Compose(
         [
             torchvision.transforms.RandomCrop(32, padding=4),
@@ -70,5 +62,6 @@ def get_cifar100_datamodule(class_embeddings, classlabels, args):
     )
     cifar100_dm.name = 'cifar100'
     cifar100_dm.dataset_cls = CIFAR100
-    cifar100_dm.EXTRA_ARGS['target_transform'] = target_transform
+    if target_transform is not None:
+        cifar100_dm.EXTRA_ARGS['target_transform'] = target_transform
     return cifar100_dm

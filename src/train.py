@@ -1,13 +1,6 @@
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision
 import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
-from torch.optim.lr_scheduler import OneCycleLR
-from torchmetrics.functional import accuracy
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
@@ -19,80 +12,7 @@ from shutil import copyfile
 from argparse import ArgumentParser
 import os
 
-from loss import OutputCE, OutputMSE
-from data import get_cifar10_datamodule, get_cifar100_datamodule
-from output_embeddings import get_cifar10_output_embeddings, get_cifar100_output_embeddings
-
-
-def create_model(n_outputs):
-    model = torchvision.models.resnet18(pretrained=False, num_classes=n_outputs)
-    model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-    model.maxpool = nn.Identity()
-    return model
-
-
-class OurLitResnet(LightningModule):
-    def __init__(self, class_embeddings_tensor, loss, three_phase=True, pct_start=0.1, lr=0.05, max_lr=0.1, batch_size=256, weight_decay=5e-4, momentum=0.9, n_train=45000):
-        super().__init__()
-        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor'])
-        self.model = create_model(class_embeddings_tensor.shape[1])
-        self.class_embeddings_tensor = class_embeddings_tensor
-        self.n_train = n_train
-        self.loss = loss
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        assert self.model.training
-        embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = self.loss(embedding, y)
-        self.log("train_loss", loss)
-        return loss
-
-    def evaluate(self, batch, stage=None):
-        x, y = batch
-        assert not self.model.training
-        embedding = F.normalize(self(x)) # go onto unit sphere where gpt embeddings live
-        loss = self.loss(embedding, y)
-        preds = torch.argmax(embedding @ self.class_embeddings_tensor.T, dim=1)
-        true_label = torch.argmax(y @ self.class_embeddings_tensor.T, dim=1)
-        acc = accuracy(preds, true_label)
-
-        if stage:
-            self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
-            self.log(f"{stage}_acc", acc, prog_bar=True, on_step=False, on_epoch=True)
-
-        return {'loss': loss, 'acc': acc}
-
-    def validation_step(self, batch, batch_idx):
-        return self.evaluate(batch, "val")
-
-    def test_step(self, batch, batch_idx):
-        return self.evaluate(batch, "test")
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.SGD(
-            self.parameters(),
-            lr=self.hparams.lr,
-            momentum=self.hparams.momentum,
-            weight_decay=self.hparams.weight_decay,
-        )
-        steps_per_epoch = self.n_train // self.hparams.batch_size
-        scheduler_dict = {
-            "scheduler": OneCycleLR(
-                optimizer,
-                self.hparams.max_lr,
-                pct_start=self.hparams.pct_start,
-                epochs=self.trainer.max_epochs,
-                steps_per_epoch=steps_per_epoch,
-                three_phase=self.hparams.three_phase,
-            ),
-            "interval": "step",
-        }
-        return {"optimizer": optimizer, "lr_scheduler": scheduler_dict}
-
+from utils import get_our_module_and_dataloader, get_baseline_module_and_dataloader
 
 def main():
     # ------------
@@ -113,6 +33,7 @@ def main():
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)
     # lightingmodule args
+    parser.add_argument('--method', default='ours', type=str)
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
@@ -134,33 +55,13 @@ def main():
     args = parser.parse_args()
 
     pl.seed_everything(args.seed)
-    # ------------
-    # data
-    # ------------
-    if args.dataset == 'cifar10':
-        class_embeddings, classids, classlabels, class_embeddings_tensor = get_cifar10_output_embeddings(args)
-        datamodule = get_cifar10_datamodule(class_embeddings, classlabels, args)
-    elif args.dataset == 'cifar100':
-        class_embeddings, classids, classlabels, class_embeddings_tensor = get_cifar100_output_embeddings(args)
-        datamodule = get_cifar100_datamodule(class_embeddings, classlabels, args)
-    # ------------
-    # model
-    # ------------
-    if args.loss == 'mse':
-        loss = OutputMSE()
-    elif args.loss == 'ce':
-        loss = OutputCE(class_embeddings_tensor)
-    else:
-        raise ValueError("unrecognized option %s, please use 'mse' or 'ce'"%args.loss)
 
-    model = OurLitResnet(class_embeddings_tensor,
-                         loss=loss,
-                         pct_start=args.pct_start,
-                         three_phase=args.three_phase,
-                         lr=args.lr,
-                         momentum=args.momentum,
-                         weight_decay=args.weight_decay,
-                         batch_size=args.batch_size)
+    if args.method == 'ours':
+        model, datamodule = get_our_module_and_dataloader(args)
+    elif args.method == 'baseline':
+        model, datamodule = get_baseline_module_and_dataloader(args)
+    else:
+        raise ValueError("unrecognized option %s for --method, please use 'ours' or 'baseline'" % args.method)
     # ------------
     # wandb
     # ------------

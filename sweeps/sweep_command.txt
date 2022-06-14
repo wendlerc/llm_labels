@@ -1,0 +1,2 @@
+for i in {1..20}; do echo $i; bsub -o /cluster/scratch/wendlerc/lsfcsss/ -G ls_krausea -n 12 -R "rusage[mem=1000, ngpus_excl_p=1]" -R "select[gpu_mtotal0>=10000]" -W 24:00 wandb agent chrisxx/lm_labels-src/gsfgim7i; done
+

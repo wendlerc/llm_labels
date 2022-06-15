@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--optimizer', default='sgd', type=str)
     # lightingmodule args
     parser.add_argument('--method', default='ours', type=str)
+    parser.add_argument('--scheduler', default=None, type=str)
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
@@ -48,12 +49,13 @@ def main():
     parser.add_argument('--checkpoint_save_top_k', type=int, default=2)
     parser.add_argument('--early_stopping_mode', type=str, default='min')
     parser.add_argument('--early_stopping_patience', type=int, default=10000)
-    parser.add_argument('--my_log_every_n_steps', type=int, default=1)
-    parser.add_argument('--my_accelerator', type=str, default='gpu')
-    parser.add_argument('--my_max_epochs', type=int, default=200)
     parser.add_argument('--upload', action='store_true')
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
+
+    args.max_epochs = 200
+    args.accelerator = 'gpu'
+    args.log_every_n_steps = 1
 
     pl.seed_everything(args.seed)
 
@@ -94,10 +96,7 @@ def main():
     trainer = pl.Trainer.from_argparse_args(args, logger=wandb_logger,
                                             callbacks=[checkpoint_callback,
                                                        es_callback, lr_monitor,
-                                                       TQDMProgressBar(refresh_rate=10)],
-                                            log_every_n_steps=args.my_log_every_n_steps,
-                                            accelerator=args.my_accelerator,
-                                            max_epochs=args.my_max_epochs)
+                                                       TQDMProgressBar(refresh_rate=10)])
 
     trainer.fit(model, datamodule)
     # ------------

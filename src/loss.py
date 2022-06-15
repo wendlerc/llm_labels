@@ -4,12 +4,11 @@ import torch.nn.functional as F
 
 
 class OutputMSE(nn.Module):
-    def __init__(self, reduction='mean'):# 15.06. changed default to mean
+    def __init__(self, reduction='sum'):# for some reason sum works much better than mean
         super().__init__()
         self.reduction = reduction
 
     def forward(self, pred_emb, label_emb):
-        pred_emb = F.normalize(pred_emb)
         if self.reduction == 'mean':
             return 64 * F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
         return F.mse_loss(pred_emb, label_emb, reduction=self.reduction)

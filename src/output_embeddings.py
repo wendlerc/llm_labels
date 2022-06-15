@@ -19,7 +19,7 @@ def get_cifar10_output_embeddings(args):
                 'truck': 9}
     classlabels = {value: key for key, value in classids.items()}
     class_embeddings_tensor = torch.tensor([class_embeddings[label] for idx, label in classlabels.items()])
-    if args.my_accelerator == 'gpu':
+    if args.accelerator == 'gpu':
         class_embeddings_tensor = class_embeddings_tensor.to('cuda:0')
     return class_embeddings, classids, classlabels, class_embeddings_tensor
 

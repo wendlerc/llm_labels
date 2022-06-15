@@ -1,5 +1,5 @@
 pandas
-torch>=1.6, <1.9
+torch==1.11.0
 torchvision
 ipython[notebook]
 seaborn

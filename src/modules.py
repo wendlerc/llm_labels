@@ -35,10 +35,10 @@ class BaseModule(LightningModule):
                  batch_size=256,
                  n_train=45000):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize'])
 
     def evaluate(self, batch, stage=None):
-        x, (emb_y, y) = batch
+        x, (emb_y, logits_y, y) = batch
         preds = self(x)  # expects forward to compute class logits
         loss = F.cross_entropy(preds, y)
         acc = accuracy(torch.argmax(preds, dim=1), y)
@@ -111,12 +111,12 @@ class OurLitResnet(BaseModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        x, (emb_y, y) = batch
+        x, (emb_y, logits_y, y) = batch
         assert self.model.training
         embedding = self.model(x)
         if self.normalize:
             embedding = F.normalize(embedding, dim=1)
-        loss = self.loss(embedding, emb_y)
+        loss = self.loss(embedding, emb_y, logits_y, y)
         self.log("train_loss", loss)
         return loss
 
@@ -131,7 +131,7 @@ class LitResnet(BaseModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        x, (emb_y, y) = batch
+        x, (emb_y, logits_y, y) = batch
         loss = F.cross_entropy(self(x), y)
         self.log("train_loss", loss)
         return loss

@@ -28,7 +28,7 @@ def main():
     parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args
     parser.add_argument('--dataset', default='cifar10', type=str, help='cifar10 or cifar100')
-    parser.add_argument('--embeddings', default='davinci', help='ada, babbage, curie, davinci')
+    parser.add_argument('--embeddings', default='curie', help='ada, babbage, curie, davinci')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)
@@ -54,9 +54,12 @@ def main():
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
-    args.max_epochs = 200
-    args.accelerator = 'gpu'
-    args.log_every_n_steps = 1
+    if args.max_epochs is None:
+        args.max_epochs = 200
+    if args.accelerator is None:
+        args.accelerator = 'gpu'
+    if args.log_every_n_steps is None:
+        args.log_every_n_steps = 1
 
     pl.seed_everything(args.seed)
 

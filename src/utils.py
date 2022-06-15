@@ -12,16 +12,18 @@ def get_our_module_and_dataloader(args):
     # ------------
     if args.dataset == 'cifar10':
         class_embeddings, classids, classlabels, class_embeddings_tensor = get_cifar10_output_embeddings(args)
+        logits = class_embeddings_tensor.cpu() @ class_embeddings_tensor.T.cpu()
 
         def target_transform(target):
-            return torch.tensor(class_embeddings[classlabels[target]]), target
+            return torch.tensor(class_embeddings[classlabels[target]]), logits[target], target
 
         datamodule = get_cifar10_datamodule(args, target_transform=target_transform)
     elif args.dataset == 'cifar100':
         class_embeddings, classids, classlabels, class_embeddings_tensor = get_cifar100_output_embeddings(args)
+        logits = class_embeddings_tensor.cpu() @ class_embeddings_tensor.T.cpu()
 
         def target_transform(target):
-            return torch.tensor(class_embeddings[classlabels[target]]), target
+            return torch.tensor(class_embeddings[classlabels[target]]), logits[target], target
 
         datamodule = get_cifar100_datamodule(args, target_transform=target_transform)
     else:
@@ -56,7 +58,7 @@ def get_baseline_module_and_dataloader(args):
     # data
     # ------------
     def target_transform(target):
-        return [], target
+        return [], [], target
 
     if args.dataset == 'cifar10':
         datamodule = get_cifar10_datamodule(args, target_transform)

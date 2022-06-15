@@ -95,7 +95,7 @@ class BaseModule(LightningModule):
             raise ValueError(f"Unknown optimizer {self.hparams.optimizer}")
 
         if self.hparams.scheduler == 'one_cycle':
-            steps_per_epoch = self.n_train // self.hparams.batch_size
+            steps_per_epoch = self.hparams.n_train // self.hparams.batch_size
             scheduler_dict = {
                 "scheduler": OneCycleLR(
                     optimizer,

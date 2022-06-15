@@ -4,7 +4,8 @@ import torch.nn.functional as F
 import torchvision
 from pytorch_lightning import LightningModule
 from torch.optim.lr_scheduler import OneCycleLR
-from torchmetrics.functional import accuracy
+from torchmetrics.functional import accuracy, confusion_matrix
+import wandb
 
 
 def create_model(n_outputs):
@@ -42,17 +43,39 @@ class BaseModule(LightningModule):
         preds = self(x)  # expects forward to compute class logits
         loss = F.cross_entropy(preds, y)
         acc = accuracy(torch.argmax(preds, dim=1), y)
+        acc2 = accuracy(preds, y, top_k=2)
+        acc3 = accuracy(preds, y, top_k=3)
+        acc4 = accuracy(preds, y, top_k=4)
+        acc5 = accuracy(preds, y, top_k=5)
         if stage:
             self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_ce_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
             self.log(f"{stage}_acc", acc, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_acc@2", acc2, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_acc@3", acc3, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_acc@4", acc4, prog_bar=True, on_step=False, on_epoch=True)
+            self.log(f"{stage}_acc@5", acc5, prog_bar=True, on_step=False, on_epoch=True)
 
-        return {'loss': loss, 'acc': acc}
+
+        return {'ce_loss': loss, 'acc': acc, 'preds':preds, 'y':y}
 
     def validation_step(self, batch, batch_idx):
         return self.evaluate(batch, "val")
 
+    def validation_epoch_end(self, outputs):
+        all_preds = torch.cat([x['preds'] for x in outputs], dim=0)
+        all_y = torch.cat([x['y'] for x in outputs], dim=0)
+        self.trainer.logger.experiment.log(
+            {'confusion_matrix': wandb.Image(confusion_matrix(all_preds, all_y, all_preds.shape[1], normalize='true'))})
+
     def test_step(self, batch, batch_idx):
         return self.evaluate(batch, "test")
+
+    def test_epoch_end(self, outputs):
+        all_preds = torch.cat([x['preds'] for x in outputs], dim=0)
+        all_y = torch.cat([x['y'] for x in outputs], dim=0)
+        self.trainer.logger.experiment.log(
+            {'confusion_matrix': wandb.Image(confusion_matrix(all_preds, all_y, all_preds.shape[1], normalize='true'))})
 
     def configure_optimizers(self):
         if self.hparams.optimizer == 'sgd':

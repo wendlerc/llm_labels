@@ -27,15 +27,15 @@ def main():
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
     parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args
-    parser.add_argument('--dataset', default='cifar10', type=str)
+    parser.add_argument('--dataset', default='cifar10', type=str, help='cifar10 or cifar100')
     parser.add_argument('--embeddings', default='davinci', help='ada, babbage, curie, davinci')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
     parser.add_argument('--num_workers', default=6, type=int)
     parser.add_argument('--optimizer', default='sgd', type=str)
     # lightingmodule args
-    parser.add_argument('--method', default='ours', type=str)
-    parser.add_argument('--scheduler', default=None, type=str)
+    parser.add_argument('--method', default='ours', type=str, help='ours, baseline')
+    parser.add_argument('--scheduler', default=None, type=str, help='None, one_cycle')
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)

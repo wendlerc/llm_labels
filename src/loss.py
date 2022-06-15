@@ -10,6 +10,8 @@ class OutputMSE(nn.Module):
 
     def forward(self, pred_emb, label_emb):
         pred_emb = F.normalize(pred_emb)
+        if self.reduction == 'mean':
+            return 64 * F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
         return F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
 
 

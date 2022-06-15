@@ -145,17 +145,21 @@ class OurLitResnet(BaseModule):
 
 
 class LitResnet(BaseModule):
-    def __init__(self, n_classes=10, **kwargs):
+    def __init__(self, n_classes=10, temperature=0., **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.model = create_model(n_classes)
+        self.temperature = temperature
 
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, (emb_y, logits_y, y) = batch
-        loss = F.cross_entropy(self(x), y)
+        if self.temperature == 0:
+            loss = F.cross_entropy(self(x), y)
+        else:
+            loss = F.cross_entropy(self(x), F.softmax(logits_y / self.temperature, dim=1))
         self.log("train_loss", loss)
         return loss
 

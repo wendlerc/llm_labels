@@ -6,7 +6,44 @@ from modules import OurLitResnet, LitResnet
 import torch
 
 
-def get_our_module_and_dataloader(args):
+def get_module(args, class_embeddings_tensor):
+    if args.method == 'ours':
+        if args.loss == 'emb_mse':
+            loss = OutputMSE()
+        elif args.loss == 'emb_ce':
+            loss = OutputCE(class_embeddings_tensor, temperature=args.softmax_temperature)
+        elif args.loss == 'emb_cos':
+            loss = OutputCosLoss()
+        else:
+            raise ValueError("unrecognized option %s for --loss." % args.loss)
+
+        model = OurLitResnet(class_embeddings_tensor,
+                             normalize=args.normalize,
+                             loss=loss,
+                             scheduler=args.scheduler,
+                             optimizer=args.optimizer,
+                             pct_start=args.pct_start,
+                             three_phase=args.three_phase,
+                             lr=args.lr,
+                             max_lr=args.max_lr,
+                             momentum=args.momentum,
+                             weight_decay=args.weight_decay,
+                             batch_size=args.batch_size)
+    elif args.method == 'baseline':
+        model = LitResnet(n_classes=class_embeddings_tensor.shape[0],
+                          temperature=args.softmax_temperature,
+                          scheduler=args.scheduler,
+                          pct_start=args.pct_start,
+                          three_phase=args.three_phase,
+                          lr=args.lr,
+                          max_lr=args.max_lr,
+                          momentum=args.momentum,
+                          weight_decay=args.weight_decay,
+                          batch_size=args.batch_size)
+    return model
+
+
+def get_datamodule_and_classembeddings(args):
     # ------------
     # data
     # ------------
@@ -28,59 +65,6 @@ def get_our_module_and_dataloader(args):
         datamodule = get_cifar100_datamodule(args, target_transform=target_transform)
     else:
         raise ValueError("unrecognized option %s for --dataset, please use 'cifar10' or 'cifar100'" % args.loss)
-    # ------------
-    # model
-    # ------------
-    if args.loss == 'emb_mse':
-        loss = OutputMSE()
-    elif args.loss == 'emb_ce':
-        loss = OutputCE(class_embeddings_tensor)
-    elif args.loss == 'emb_cos':
-        loss = OutputCosLoss()
-    else:
-        raise ValueError("unrecognized option %s for --loss." % args.loss)
 
-    model = OurLitResnet(class_embeddings_tensor,
-                         normalize=args.normalize,
-                         loss=loss,
-                         scheduler=args.scheduler,
-                         optimizer=args.optimizer,
-                         pct_start=args.pct_start,
-                         three_phase=args.three_phase,
-                         lr=args.lr,
-                         max_lr=args.max_lr,
-                         momentum=args.momentum,
-                         weight_decay=args.weight_decay,
-                         batch_size=args.batch_size)
-    return model, datamodule
-
-
-def get_baseline_module_and_dataloader(args):
-    # ------------
-    # data
-    # ------------
-    def target_transform(target):
-        return [], [], target
-
-    if args.dataset == 'cifar10':
-        datamodule = get_cifar10_datamodule(args, target_transform)
-        n_classes = 10
-    elif args.dataset == 'cifar100':
-        datamodule = get_cifar100_datamodule(args, target_transform)
-        n_classes = 100
-    else:
-        raise ValueError("unrecognized option %s for --dataset, please use 'cifar10' or 'cifar100'" % args.loss)
-    # ------------
-    # model
-    # ------------
-    model = LitResnet(n_classes=n_classes,
-                      scheduler=args.scheduler,
-                      pct_start=args.pct_start,
-                      three_phase=args.three_phase,
-                      lr=args.lr,
-                      max_lr=args.max_lr,
-                      momentum=args.momentum,
-                      weight_decay=args.weight_decay,
-                      batch_size=args.batch_size)
-    return model, datamodule
+    return datamodule, class_embeddings_tensor
 

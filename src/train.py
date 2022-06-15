@@ -12,7 +12,7 @@ from shutil import copyfile
 from argparse import ArgumentParser
 import os
 
-from utils import get_our_module_and_dataloader, get_baseline_module_and_dataloader
+from utils import get_module, get_datamodule_and_classembeddings
 
 def main():
     # ------------
@@ -43,7 +43,8 @@ def main():
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--pct_start', default=0.3, type=float)
     parser.add_argument('--three_phase', default=False, type=bool)
-    parser.add_argument('--loss', default='emb_mse', type=str, help='emb_mse, emb_ce')
+    parser.add_argument('--loss', default='emb_mse', type=str, help='emb_mse, emb_ce, emb_cos')
+    parser.add_argument('--softmax_temperature', default=0.0, type=float, help='if this is nonzero, the soft-labels are used.')
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_acc')
     parser.add_argument('--mode', type=str, default='max')
@@ -63,13 +64,8 @@ def main():
 
     pl.seed_everything(args.seed)
 
-    if args.method == 'ours':
-        model, datamodule = get_our_module_and_dataloader(args)
-    elif args.method == 'baseline':
-        model, datamodule = get_baseline_module_and_dataloader(args)
-    else:
-        raise ValueError("unrecognized option %s for --method, please use 'ours' or 'baseline'" % args.method)
-    print(model)
+    datamodule, class_embeddings_tensor = get_datamodule_and_classembeddings(args)
+    model = get_module(args, class_embeddings_tensor)
     # ------------
     # wandb
     # ------------
@@ -102,8 +98,10 @@ def main():
                                             callbacks=[checkpoint_callback,
                                                        es_callback, lr_monitor,
                                                        TQDMProgressBar(refresh_rate=10)])
-
-    trainer.fit(model, datamodule)
+    try:
+        trainer.fit(model, datamodule)
+    except KeyboardInterrupt:
+        pass
     # ------------
     # testing
     # ------------

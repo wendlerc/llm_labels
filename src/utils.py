@@ -37,6 +37,7 @@ def get_our_module_and_dataloader(args):
         raise ValueError("unrecognized option %s for --loss, please use 'mse' or 'ce'" % args.loss)
 
     model = OurLitResnet(class_embeddings_tensor,
+                         normalize=args.normalize,
                          loss=loss,
                          scheduler=args.scheduler,
                          optimizer=args.optimizer,

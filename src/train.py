@@ -36,6 +36,7 @@ def main():
     # lightingmodule args
     parser.add_argument('--method', default='ours', type=str, help='ours, baseline')
     parser.add_argument('--scheduler', default=None, type=str, help='None, one_cycle')
+    parser.add_argument('--normalize', action='store_true', help='whether to normalize to the unit sphere')
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--max_lr', default=0.1, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)

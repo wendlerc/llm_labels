@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class OutputMSE(nn.Module):
-    def __init__(self, reduction='sum'):
+    def __init__(self, reduction='mean'):# 15.06. changed default to mean
         super().__init__()
         self.reduction = reduction
 
@@ -23,6 +23,5 @@ class OutputCE(nn.Module):
         y = torch.argmax(label_emb @ self.class_embeddings_tensor.T, dim=1)
         loss = F.cross_entropy(logits, y)
         return loss
-
 
 

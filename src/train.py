@@ -45,10 +45,10 @@ def main():
     parser.add_argument('--three_phase', default=False, type=bool)
     parser.add_argument('--loss', default='emb_mse', type=str, help='emb_mse, emb_ce')
     # trainer args
-    parser.add_argument('--monitor', type=str, default='val_loss')
+    parser.add_argument('--monitor', type=str, default='val_acc')
+    parser.add_argument('--mode', type=str, default='max')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')
     parser.add_argument('--checkpoint_save_top_k', type=int, default=2)
-    parser.add_argument('--early_stopping_mode', type=str, default='min')
     parser.add_argument('--early_stopping_patience', type=int, default=10000)
     parser.add_argument('--upload', action='store_true')
     parser = pl.Trainer.add_argparse_args(parser)
@@ -89,10 +89,11 @@ def main():
     checkpoint_callback = ModelCheckpoint(dirpath=args.checkpoint_dir+'/%s'%wandb_logger.experiment.name,
                                           save_top_k=args.checkpoint_save_top_k,
                                           monitor=args.monitor,
+                                          mode=args.mode,
                                           save_on_train_epoch_end=False)
 
     es_callback = EarlyStopping(monitor=args.monitor,
-                                mode=args.early_stopping_mode,
+                                mode=args.mode,
                                 patience=args.early_stopping_patience,
                                 check_on_train_epoch_end=False)
     lr_monitor = LearningRateMonitor()

@@ -3,8 +3,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class OutputCosLoss(nn.Module):
+    def __init__(self, reduction='mean'):
+        super().__init__()
+        self.sim = nn.CosineSimilarity(dim=1)
+        self.reduction = reduction
+
+    def forward(self, pred_emb, label_emb, label_logits, label):
+        losses = 1-self.sim(pred_emb, label_emb)
+        if self.reduction == 'mean':
+            return losses.mean()
+        elif self.reduction == 'sum':
+            return losses.sum()
+        else:
+            raise ValueError(f"Unknown reduction {self.reduction}")
+
+
 class OutputMSE(nn.Module):
-    def __init__(self, reduction='sum'):# for some reason sum works much better than mean
+    def __init__(self, reduction='mean'):# for some reason sum works much better than mean
         super().__init__()
         self.reduction = reduction
 

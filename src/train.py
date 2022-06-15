@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--pct_start', default=0.3, type=float)
     parser.add_argument('--three_phase', default=False, type=bool)
-    parser.add_argument('--loss', default='mse', type=str)
+    parser.add_argument('--loss', default='emb_mse', type=str, help='emb_mse, emb_ce')
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_loss')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints')

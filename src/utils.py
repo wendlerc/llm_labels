@@ -1,5 +1,5 @@
 
-from loss import OutputCE, OutputMSE
+from loss import OutputCE, OutputMSE, OutputCosLoss
 from data import get_cifar10_datamodule, get_cifar100_datamodule
 from output_embeddings import get_cifar10_output_embeddings, get_cifar100_output_embeddings
 from modules import OurLitResnet, LitResnet
@@ -31,12 +31,14 @@ def get_our_module_and_dataloader(args):
     # ------------
     # model
     # ------------
-    if args.loss == 'mse':
+    if args.loss == 'emb_mse':
         loss = OutputMSE()
-    elif args.loss == 'ce':
+    elif args.loss == 'emb_ce':
         loss = OutputCE(class_embeddings_tensor)
+    elif args.loss == 'emb_cos':
+        loss = OutputCosLoss()
     else:
-        raise ValueError("unrecognized option %s for --loss, please use 'mse' or 'ce'" % args.loss)
+        raise ValueError("unrecognized option %s for --loss." % args.loss)
 
     model = OurLitResnet(class_embeddings_tensor,
                          normalize=args.normalize,

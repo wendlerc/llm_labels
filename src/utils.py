@@ -42,6 +42,7 @@ def get_our_module_and_dataloader(args):
                          pct_start=args.pct_start,
                          three_phase=args.three_phase,
                          lr=args.lr,
+                         max_lr=args.max_lr,
                          momentum=args.momentum,
                          weight_decay=args.weight_decay,
                          batch_size=args.batch_size)
@@ -67,6 +68,7 @@ def get_baseline_module_and_dataloader(args):
                       pct_start=args.pct_start,
                       three_phase=args.three_phase,
                       lr=args.lr,
+                      max_lr=args.max_lr,
                       momentum=args.momentum,
                       weight_decay=args.weight_decay,
                       batch_size=args.batch_size)

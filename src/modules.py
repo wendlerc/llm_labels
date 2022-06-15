@@ -116,7 +116,6 @@ class OurLitResnet(BaseModule):
         embedding = self.model(x)
         if self.normalize:
             embedding = F.normalize(embedding, dim=1)
-        target = y
         loss = self.loss(embedding, emb_y)
         self.log("train_loss", loss)
         return loss

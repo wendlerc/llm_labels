@@ -34,7 +34,7 @@ class BaseModule(LightningModule):
                  pct_start=0.1,
                  max_lr=0.1,
                  batch_size=256,
-                 n_train=45000):
+                 steps_per_epoch=None):
         super().__init__()
         self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize'])
 
@@ -95,7 +95,7 @@ class BaseModule(LightningModule):
             raise ValueError(f"Unknown optimizer {self.hparams.optimizer}")
 
         if self.hparams.scheduler == 'one_cycle':
-            steps_per_epoch = self.hparams.n_train // self.hparams.batch_size
+            steps_per_epoch = self.hparams.steps_per_epoch
             scheduler_dict = {
                 "scheduler": OneCycleLR(
                     optimizer,

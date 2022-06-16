@@ -66,7 +66,12 @@ def main():
     pl.seed_everything(args.seed)
 
     datamodule, class_embeddings_tensor = get_datamodule_and_classembeddings(args)
-    model = get_module(args, class_embeddings_tensor)
+    # determine steps per epoch for the one_cycle scheduler
+    datamodule.prepare_data()
+    datamodule.setup()
+    train_loader = datamodule.train_dataloader()
+    steps_per_epoch = len(train_loader)
+    model = get_module(args, class_embeddings_tensor, steps_per_epoch)
     # ------------
     # wandb
     # ------------

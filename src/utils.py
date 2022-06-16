@@ -6,7 +6,7 @@ from modules import OurLitResnet, LitResnet
 import torch
 
 
-def get_module(args, class_embeddings_tensor):
+def get_module(args, class_embeddings_tensor, steps_per_epoch):
     if args.method == 'ours':
         if args.loss == 'emb_mse':
             loss = OutputMSE(reduction=args.loss_reduction)
@@ -28,7 +28,8 @@ def get_module(args, class_embeddings_tensor):
                              max_lr=args.max_lr,
                              momentum=args.momentum,
                              weight_decay=args.weight_decay,
-                             batch_size=args.batch_size)
+                             batch_size=args.batch_size,
+                             steps_per_epoch=steps_per_epoch)
     elif args.method == 'baseline':
         model = LitResnet(n_classes=class_embeddings_tensor.shape[0],
                           temperature=args.softmax_temperature,
@@ -39,7 +40,8 @@ def get_module(args, class_embeddings_tensor):
                           max_lr=args.max_lr,
                           momentum=args.momentum,
                           weight_decay=args.weight_decay,
-                          batch_size=args.batch_size)
+                          batch_size=args.batch_size,
+                          steps_per_epoch=steps_per_epoch)
     return model
 
 

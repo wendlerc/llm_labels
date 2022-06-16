@@ -9,7 +9,7 @@ import numpy as np
 class CIFAR100ZeroShot(VisionDataset):
     """ CIFAR100 with a different split that allows for zero-shot learning evaluation."""
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False,
-                 test_classes=np.arange(0, 100, 6)):
+                 test_classes=np.arange(0, 100, 5)):
         super(CIFAR100ZeroShot, self).__init__(root, transform=transform, target_transform=target_transform)
         self.train = train
         self.cifar100_train = CIFAR100(root, train=True, download=download, transform=transform,

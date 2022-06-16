@@ -111,6 +111,7 @@ def main():
     # ------------
     # testing
     # ------------
+    model.stage = 'test'
     result = trainer.test(model, datamodule=datamodule, ckpt_path='best')
 
     print(result)

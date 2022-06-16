@@ -6,6 +6,7 @@ from pytorch_lightning import LightningModule
 from torch.optim.lr_scheduler import OneCycleLR
 from torchmetrics.functional import accuracy, confusion_matrix
 import wandb
+import numpy as np
 
 
 def create_model(n_outputs):
@@ -36,7 +37,8 @@ class BaseModule(LightningModule):
                  batch_size=256,
                  steps_per_epoch=None):
         super().__init__()
-        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize'])
+        self.stage = None
+        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize', 'test_classes'])
 
     def evaluate(self, batch, stage=None):
         x, (emb_y, logits_y, y) = batch
@@ -118,19 +120,29 @@ class BaseModule(LightningModule):
 
 
 class OurLitResnet(BaseModule):
-    def __init__(self, class_embeddings_tensor, loss, normalize=False, **kwargs):
+    def __init__(self, class_embeddings_tensor, loss, normalize=False, test_classes=None, **kwargs):
         super().__init__()
-        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize'])
+        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize', 'test_classes'])
         self.model = my_create_model(class_embeddings_tensor.shape[1])
         self.class_embeddings_tensor = class_embeddings_tensor
         self.loss = loss
         self.normalize = normalize
+        self.test_classes = test_classes
+        if self.test_classes is not None:
+            mask = np.zeros(self.class_embeddings_tensor.shape[0])
+            mask[self.test_classes] = 1
+            mask = mask[:, np.newaxis]
+            self.test_mask = torch.tensor(mask, device=self.class_embeddings_tensor.device, dtype=torch.float32)
 
     def forward(self, x):
+        if self.test_classes is not None and self.stage == 'test':
+            class_embeddings = self.test_mask * self.class_embeddings_tensor
+        else:
+            class_embeddings = self.class_embeddings_tensor
         embedding = self.model(x)
         if self.normalize:
             embedding = F.normalize(embedding, dim=1)
-        logits = embedding @ self.class_embeddings_tensor.T
+        logits = embedding @ class_embeddings.T
         return logits
 
     def training_step(self, batch, batch_idx):

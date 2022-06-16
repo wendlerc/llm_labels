@@ -4,7 +4,7 @@ from data import get_cifar_datamodule
 from output_embeddings import get_cifar_output_embeddings
 from modules import OurLitResnet, LitResnet
 import torch
-
+import numpy as np
 
 def get_module(args, class_embeddings_tensor, steps_per_epoch):
     if args.method == 'ours':
@@ -17,6 +17,10 @@ def get_module(args, class_embeddings_tensor, steps_per_epoch):
         else:
             raise ValueError("unrecognized option %s for --loss." % args.loss)
 
+        if args.dataset == 'cifar100_zeroshot':
+            test_classes = np.arange(0, 100, 5)
+        else:
+            test_classes = None
         model = OurLitResnet(class_embeddings_tensor,
                              normalize=args.normalize,
                              loss=loss,
@@ -29,7 +33,8 @@ def get_module(args, class_embeddings_tensor, steps_per_epoch):
                              momentum=args.momentum,
                              weight_decay=args.weight_decay,
                              batch_size=args.batch_size,
-                             steps_per_epoch=steps_per_epoch)
+                             steps_per_epoch=steps_per_epoch,
+                             test_classes=test_classes)
     elif args.method == 'baseline':
         model = LitResnet(n_classes=class_embeddings_tensor.shape[0],
                           temperature=args.softmax_temperature,

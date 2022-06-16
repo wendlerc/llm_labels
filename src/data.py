@@ -19,11 +19,37 @@ class CIFAR100ZeroShot(VisionDataset):
         self.test_classes = test_classes
 
         if train:
-            self.data = [item for item in self.cifar100_train if item[-1] not in test_classes]
-            self.data += [item for item in self.cifar100_test if item[-1] not in test_classes]
+            self.data = []
+            for item in self.cifar100_train:
+                if type(item[1]) == int:
+                    clsid = item[1]
+                else:
+                    clsid = item[1][-1]
+                if clsid not in self.test_classes:
+                    self.data.append(item)
+            for item in self.cifar100_test:
+                if type(item[1]) == int:
+                    clsid = item[1]
+                else:
+                    clsid = item[1][-1]
+                if clsid not in self.test_classes:
+                    self.data.append(item)
         else:
-            self.data = [item for item in self.cifar100_train if item[-1] in test_classes]
-            self.data += [item for item in self.cifar100_test if item[-1] in test_classes]
+            self.data = []
+            for item in self.cifar100_train:
+                if type(item[1]) == int:
+                    clsid = item[1]
+                else:
+                    clsid = item[1][-1]
+                if clsid in self.test_classes:
+                    self.data.append(item)
+            for item in self.cifar100_test:
+                if type(item[1]) == int:
+                    clsid = item[1]
+                else:
+                    clsid = item[1][-1]
+                if clsid in self.test_classes:
+                    self.data.append(item)
 
     def __getitem__(self, index):
         return self.data[index]

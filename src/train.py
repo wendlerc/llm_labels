@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
     parser.add_argument('--group', default=None)# this is useful to organize the runs
     # datamodule args
-    parser.add_argument('--dataset', default='cifar10', type=str, help='cifar10 or cifar100')
+    parser.add_argument('--dataset', default='cifar10', type=str, help='cifar10, cifar100, cifar100_zeroshot')
     parser.add_argument('--embeddings', default='curie', help='ada, babbage, curie, davinci')
     parser.add_argument('--data_path', default='data/datasets/', type=str)
     parser.add_argument('--batch_size', default=256, type=int)
@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--pct_start', default=0.3, type=float)
     parser.add_argument('--three_phase', default=False, type=bool)
     parser.add_argument('--loss', default='emb_mse', type=str, help='emb_mse, emb_ce, emb_cos')
+    parser.add_argument('--loss_reduction', default='mean', type=str, help='mean, sum')
     parser.add_argument('--softmax_temperature', default=0.0, type=float, help='if this is nonzero, the soft-labels are used.')
     # trainer args
     parser.add_argument('--monitor', type=str, default='val_acc')

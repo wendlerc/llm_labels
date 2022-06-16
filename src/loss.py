@@ -20,7 +20,7 @@ class OutputCosLoss(nn.Module):
 
 
 class OutputMSE(nn.Module):
-    def __init__(self, reduction='mean'):# for some reason sum works much better than mean
+    def __init__(self, reduction='sum'):# for some reason sum works much better than mean
         super().__init__()
         self.reduction = reduction
 

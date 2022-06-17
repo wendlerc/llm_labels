@@ -39,6 +39,7 @@ def get_module(args, class_embeddings_tensor, steps_per_epoch):
         model = LitResnet(n_classes=class_embeddings_tensor.shape[0],
                           temperature=args.softmax_temperature,
                           scheduler=args.scheduler,
+                          optimizer=args.optimizer,
                           pct_start=args.pct_start,
                           three_phase=args.three_phase,
                           lr=args.lr,

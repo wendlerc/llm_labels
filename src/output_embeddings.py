@@ -28,7 +28,7 @@ def get_cifar_output_embeddings(args):
         with open(embedding_file, 'r') as f:
             class_embeddings = json.load(f)
 
-        labels = ['beaver', 'dolphin', 'otter', 'seal', 'whale',
+        labels = sorted(['beaver', 'dolphin', 'otter', 'seal', 'whale',
                   'aquarium fish', 'flatfish', 'ray', 'shark', 'trout',
                   'orchids', 'poppies', 'roses', 'sunflowers', 'tulips',
                   'bottles', 'bowls', 'cans', 'cups', 'plates',
@@ -47,7 +47,7 @@ def get_cifar_output_embeddings(args):
                   'hamster', 'mouse', 'rabbit', 'shrew', 'squirrel',
                   'maple', 'oak', 'palm', 'pine', 'willow',
                   'bicycle', 'bus', 'motorcycle', 'pickup truck', 'train',
-                  'lawn-mower', 'rocket', 'streetcar', 'tank', 'tractor']
+                  'lawn-mower', 'rocket', 'streetcar', 'tank', 'tractor'])
 
         classids = {l: idx for idx, l in enumerate(labels)}
         classlabels = {idx: l for idx, l in enumerate(labels)}

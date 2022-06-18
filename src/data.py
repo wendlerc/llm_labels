@@ -12,11 +12,11 @@ class CIFAR100ZeroShot(VisionDataset):
                  test_classes=np.arange(0, 100, 5)):
         super(CIFAR100ZeroShot, self).__init__(root, transform=transform, target_transform=target_transform)
         self.train = train
-        self.cifar100_train = CIFAR100(root, train=True, download=download, transform=transform,
-                                       target_transform=target_transform)
-        self.cifar100_test = CIFAR100(root, train=False, download=download, transform=transform,
-                                      target_transform=target_transform)
+        self.cifar100_train = CIFAR100(root, train=True, download=download)
+        self.cifar100_test = CIFAR100(root, train=False, download=download)
         self.test_classes = test_classes
+        self.transform = transform
+        self.target_transform = target_transform
 
         if train:
             self.data = []
@@ -52,7 +52,12 @@ class CIFAR100ZeroShot(VisionDataset):
                     self.data.append(item)
 
     def __getitem__(self, index):
-        return self.data[index]
+        img, target = self.data[index]
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+        return img, target
 
     def __len__(self):
         return len(self.data)

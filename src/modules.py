@@ -8,6 +8,8 @@ from torchmetrics.functional import accuracy, confusion_matrix
 import wandb
 import numpy as np
 
+# this maps from sorted indices to the unsorted ones where the superclasses are in chunks of 5
+cifar100_idcs = np.asarray([4, 31, 55, 72, 95, 1, 33, 67, 73, 91, 54, 62, 70, 82, 92, 9, 10, 16, 29, 61, 0, 51, 53, 57, 83, 22, 25, 40, 86, 87, 5, 20, 26, 84, 94, 6, 7, 14, 18, 24, 3, 42, 43, 88, 97, 12, 17, 38, 68, 76, 23, 34, 49, 60, 71, 15, 19, 21, 32, 39, 35, 63, 64, 66, 75, 27, 45, 77, 79, 99, 2, 11, 36, 46, 98, 28, 30, 44, 78, 93, 37, 50, 65, 74, 80, 47, 52, 56, 59, 96, 8, 13, 48, 58, 90, 41, 69, 81, 85, 89])
 
 def create_model(n_outputs):
     model = torchvision.models.resnet18(pretrained=False, num_classes=n_outputs)
@@ -45,10 +47,10 @@ class BaseModule(LightningModule):
         preds = self(x)  # expects forward to compute class logits
         loss = F.cross_entropy(preds, y)
         if preds.shape[1] == 100:
-            sc_logits = F.max_pool1d(preds.unsqueeze(1), kernel_size=5, stride=5)
+            sc_logits = F.max_pool1d(preds[:, cifar100_idcs].unsqueeze(1), kernel_size=5, stride=5)
             sc_pred = torch.argmax(sc_logits.squeeze(), dim=1)
             logits_y = F.one_hot(y, num_classes=100).float()
-            sc_logits_y = F.max_pool1d(logits_y.unsqueeze(1), kernel_size=5, stride=5)
+            sc_logits_y = F.max_pool1d(logits_y[:, cifar100_idcs].unsqueeze(1), kernel_size=5, stride=5)
             sc_y = torch.argmax(sc_logits_y.squeeze(), dim=1)
             sc_acc = accuracy(sc_pred, sc_y)
             self.log(f"{stage}_superclass_acc", sc_acc, prog_bar=True, on_step=False, on_epoch=True)

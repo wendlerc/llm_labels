@@ -44,6 +44,14 @@ class BaseModule(LightningModule):
         x, (emb_y, logits_y, y) = batch
         preds = self(x)  # expects forward to compute class logits
         loss = F.cross_entropy(preds, y)
+        if preds.shape[1] == 100:
+            sc_logits = F.max_pool1d(preds.unsqueeze(1), kernel_size=5, stride=5)
+            sc_pred = torch.argmax(sc_logits.squeeze(), dim=1)
+            logits_y = F.one_hot(y, num_classes=100).float()
+            sc_logits_y = F.max_pool1d(logits_y.unsqueeze(1), kernel_size=5, stride=5)
+            sc_y = torch.argmax(sc_logits_y.squeeze(), dim=1)
+            sc_acc = accuracy(sc_pred, sc_y)
+            self.log(f"{stage}_superclass_acc", sc_acc, prog_bar=True, on_step=False, on_epoch=True)
         acc = accuracy(torch.argmax(preds, dim=1), y)
         acc2 = accuracy(preds, y, top_k=2)
         acc3 = accuracy(preds, y, top_k=3)

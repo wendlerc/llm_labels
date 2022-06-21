@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--seed', type=int, default=7)
     # wandb args
     parser.add_argument('--wandb_name', default=None, type=str)
+    parser.add_argument('--wandb_mode', default='online', type=str)
     parser.add_argument('--wandb_project', default='lm_labels_cifar10', type=str)
     parser.add_argument('--wandb_entity', default='dfstransformer', type=str)
     parser.add_argument('--checkpoint_yaml', default='checkpoint_callback.yaml')
@@ -87,6 +88,7 @@ def main():
     wandb_logger = WandbLogger(entity=args.wandb_entity,
                                project=args.wandb_project,
                                name=args.wandb_name,
+                               mode=args.wandb_mode,
                                config=args)
     run = wandb_logger.experiment
     # save file to artifact folder

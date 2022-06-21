@@ -9,7 +9,7 @@ class OutputCosLoss(nn.Module):
         self.sim = nn.CosineSimilarity(dim=1)
         self.reduction = reduction
 
-    def forward(self, pred_emb, label_emb, label_logits, label):
+    def forward(self, pred_emb, label_emb, label_logits, label, class_embeddings_tensor=None):
         losses = 1-self.sim(pred_emb, label_emb)
         if self.reduction == 'mean':
             return losses.mean()
@@ -24,7 +24,7 @@ class OutputMSE(nn.Module):
         super().__init__()
         self.reduction = reduction
 
-    def forward(self, pred_emb, label_emb, label_logits, label):
+    def forward(self, pred_emb, label_emb, label_logits, label, class_embeddings_tensor=None):
         if self.reduction == 'mean':
             return 64 * F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
         return F.mse_loss(pred_emb, label_emb, reduction=self.reduction)
@@ -36,8 +36,11 @@ class OutputCE(nn.Module):
         self.temperature = temperature
         self.class_embeddings_tensor = class_embeddings
 
-    def forward(self, pred_emb, label_emb, label_logits, label):
-        logits = pred_emb @ self.class_embeddings_tensor.T
+    def forward(self, pred_emb, label_emb, label_logits, label, class_embeddings_tensor=None):
+        if class_embeddings_tensor is None:
+            class_embeddings_tensor = self.class_embeddings_tensor
+        logits = pred_emb @ class_embeddings_tensor.T
+
         if self.temperature == 0:
             target = label
         else:

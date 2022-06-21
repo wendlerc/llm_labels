@@ -11,6 +11,15 @@ import numpy as np
 # this maps from sorted indices to the unsorted ones where the superclasses are in chunks of 5
 cifar100_idcs = np.asarray([4, 31, 55, 72, 95, 1, 33, 67, 73, 91, 54, 62, 70, 82, 92, 9, 10, 16, 29, 61, 0, 51, 53, 57, 83, 22, 25, 40, 86, 87, 5, 20, 26, 84, 94, 6, 7, 14, 18, 24, 3, 42, 43, 88, 97, 12, 17, 38, 68, 76, 23, 34, 49, 60, 71, 15, 19, 21, 32, 39, 35, 63, 64, 66, 75, 27, 45, 77, 79, 99, 2, 11, 36, 46, 98, 28, 30, 44, 78, 93, 37, 50, 65, 74, 80, 47, 52, 56, 59, 96, 8, 13, 48, 58, 90, 41, 69, 81, 85, 89])
 
+
+def create_projection_model():
+    model = torchvision.models.resnet18(pretrained=False, num_classes=100)
+    model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+    model.maxpool = nn.Identity()
+    model.fc = nn.Identity()
+    return model
+
+
 def create_model(n_outputs):
     model = torchvision.models.resnet18(pretrained=False, num_classes=n_outputs)
     model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
@@ -162,6 +171,45 @@ class OurLitResnet(BaseModule):
         if self.normalize:
             embedding = F.normalize(embedding, dim=1)
         loss = self.loss(embedding, emb_y, logits_y, y)
+        self.log("train_loss", loss)
+        return loss
+
+
+class OurProjectionLitResnet(BaseModule):
+    def __init__(self, class_embeddings_tensor, loss, normalize=False, test_classes=None, **kwargs):
+        super().__init__()
+        self.save_hyperparameters(ignore=['loss', 'class_embeddings_tensor', 'normalize', 'test_classes'])
+        self.model = create_projection_model() # this outputs feature vectors of length 512
+        self.projector = nn.Linear(class_embeddings_tensor.shape[1], 512)
+        self.class_embeddings_tensor = class_embeddings_tensor
+        self.loss = loss
+        self.normalize = normalize
+        self.test_classes = test_classes
+        if self.test_classes is not None:
+            mask = np.zeros(self.class_embeddings_tensor.shape[0])
+            mask[self.test_classes] = 1
+            mask = mask[:, np.newaxis]
+            self.test_mask = torch.tensor(mask, device=self.class_embeddings_tensor.device, dtype=torch.float32)
+
+    def forward(self, x):
+        if self.test_classes is not None and self.stage == 'test':
+            class_embeddings = self.test_mask * self.class_embeddings_tensor
+        else:
+            class_embeddings = self.class_embeddings_tensor
+        class_embeddings = self.projector(class_embeddings)
+        embedding = self.model(x)
+        if self.normalize:
+            embedding = F.normalize(embedding, dim=1)
+        logits = embedding @ class_embeddings.T
+        return logits
+
+    def training_step(self, batch, batch_idx):
+        x, (emb_y, logits_y, y) = batch
+        assert self.model.training
+        embedding = self.model(x)
+        if self.normalize:
+            embedding = F.normalize(embedding, dim=1)
+        loss = self.loss(embedding, self.projector(emb_y), logits_y, y, self.projector(self.class_embeddings_tensor))
         self.log("train_loss", loss)
         return loss
 

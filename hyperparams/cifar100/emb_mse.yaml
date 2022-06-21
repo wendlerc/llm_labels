@@ -1,4 +1,5 @@
 dataset: cifar100
+max_epochs: 78
 batch_size: 47
 optimizer: sgd
 scheduler: one_cycle

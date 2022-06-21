@@ -10,4 +10,6 @@ weight_decay: 0.00046
 pct_start: 0.221
 three_phase: true
 softmax_temperature: 0.0
-method: baseline
+method: projection
+loss: emb_ce
+loss_reduction: mean

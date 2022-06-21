@@ -1,0 +1,15 @@
+dataset: cifar10
+max_epochs: 78
+batch_size: 47
+optimizer: sgd
+scheduler: one_cycle
+lr: 0.000983
+max_lr: 0.311
+momentum: 0.9
+weight_decay: 0.0000622
+pct_start: 0.369
+three_phase: true
+softmax_temperature: 0.0
+method: ours
+loss: emb_mse
+loss_reduction: mean

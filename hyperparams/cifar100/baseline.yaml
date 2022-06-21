@@ -1,0 +1,12 @@
+dataset: cifar100
+batch_size: 76
+optimizer: sgd
+scheduler: one_cycle
+lr: 0.0000975
+max_lr: 0.063
+momentum: 0.484
+weight_decay: 0.00046
+pct_start: 0.221
+three_phase: true
+softmax_temperature: 0.0
+method: baseline

@@ -1,0 +1,14 @@
+dataset: cifar100
+batch_size: 242
+optimizer: sgd
+scheduler: one_cycle
+lr: 0.0331
+max_lr: 0.257
+momentum: 0.799
+weight_decay: 0.000785
+pct_start: 0.123
+three_phase: false
+softmax_temperature: 0.0
+method: ours
+loss: emb_ce
+loss_reduction: mean

@@ -53,6 +53,9 @@ def main():
     parser.add_argument('--checkpoint_save_top_k', type=int, default=2)
     parser.add_argument('--early_stopping_patience', type=int, default=10000)
     parser.add_argument('--upload', action='store_true')
+    # whether to overwrite some params with a yaml
+    parser.add_argument('--yaml', type=str, default=None, help='overwrites params with the ones from the yaml file')
+
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
@@ -62,6 +65,12 @@ def main():
         args.accelerator = 'gpu'
     if args.log_every_n_steps is None:
         args.log_every_n_steps = 1
+
+    if args.yaml is not None:
+        with open(args.yaml, 'r') as f:
+            yaml_args = yaml.load(f, Loader=yaml.FullLoader)
+        for k, v in yaml_args.items():
+            setattr(args, k, v)
 
     pl.seed_everything(args.seed)
 

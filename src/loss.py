@@ -3,6 +3,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class MarginLoss(nn.Module):
+    def __init__(self, class_embeddings, margin=1.):
+        super().__init__()
+        self.class_embeddings_tensor = class_embeddings
+        self.margin = margin
+
+    def forward(self, pred_emb, label_emb, label_logits, label, class_embeddings_tensor=None):
+        if class_embeddings_tensor is None:
+            class_embeddings_tensor = self.class_embeddings_tensor
+        alignment_all = pred_emb @ class_embeddings_tensor.T
+        alignment_correct = pred_emb @ label_emb
+        tmp = torch.maximum(0, self.margin - alignment_correct + alignment_all)
+        tmp[label] = 0
+        return tmp.sum(dim=1)
+
+
 class OutputCosLoss(nn.Module):
     def __init__(self, reduction='mean'):
         super().__init__()

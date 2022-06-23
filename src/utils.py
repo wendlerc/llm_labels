@@ -1,5 +1,5 @@
 
-from loss import OutputCE, OutputMSE, OutputCosLoss
+from loss import OutputCE, OutputMSE, OutputCosLoss, MarginLoss
 from data import get_cifar_datamodule
 from output_embeddings import get_cifar_output_embeddings
 from modules import OurLitResnet, LitResnet, OurProjectionLitResnet
@@ -15,6 +15,8 @@ def get_module(args, class_embeddings_tensor, steps_per_epoch):
             loss = OutputCE(class_embeddings_tensor, temperature=args.softmax_temperature)
         elif args.loss == 'emb_cos':
             loss = OutputCosLoss(reduction=args.loss_reduction)
+        elif args.loss == 'emb_margin':
+            loss = MarginLoss(class_embeddings_tensor)
         else:
             raise ValueError("unrecognized option %s for --loss." % args.loss)
 

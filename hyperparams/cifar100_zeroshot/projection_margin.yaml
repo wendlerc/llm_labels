@@ -1,4 +1,4 @@
-dataset: cifar100
+dataset: cifar100_zeroshot
 max_epochs: 155
 batch_size: 76
 optimizer: sgd

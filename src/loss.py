@@ -14,8 +14,8 @@ class MarginLoss(nn.Module):
             class_embeddings_tensor = self.class_embeddings_tensor
         alignment_all = pred_emb @ class_embeddings_tensor.T
         alignment_correct = (pred_emb * label_emb).sum(dim=1).unsqueeze(1)
-        tmp = F.relu(self.margin - alignment_correct + alignment_all) - self.margin
-        return tmp.sum(dim=1).mean()
+        tmp = F.relu(self.margin - alignment_correct + alignment_all)
+        return (tmp.sum(dim=1) - self.margin).mean()
 
 
 class OutputCosLoss(nn.Module):

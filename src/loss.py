@@ -13,10 +13,9 @@ class MarginLoss(nn.Module):
         if class_embeddings_tensor is None:
             class_embeddings_tensor = self.class_embeddings_tensor
         alignment_all = pred_emb @ class_embeddings_tensor.T
-        alignment_correct = pred_emb @ label_emb
-        tmp = torch.maximum(0, self.margin - alignment_correct + alignment_all)
-        tmp[label] = 0
-        return tmp.sum(dim=1)
+        alignment_correct = (pred_emb * label_emb).sum(dim=1).unsqueeze(1)
+        tmp = F.relu(self.margin - alignment_correct + alignment_all) - self.margin
+        return tmp.sum(dim=1).mean()
 
 
 class OutputCosLoss(nn.Module):

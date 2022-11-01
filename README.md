@@ -2,7 +2,12 @@
 
 In this repo I investigated the utility of embedding the class labels of a classification task (e.g., CIFAR100) using GPT3.
 In particular, I was interested whether the GPT3 embeddings of class labels serve as better targets for classification models, and,
-whether they can be used to obtain zero-shot performance.  
+whether they can be used to obtain zero-shot performance. 
+
+The general approach is to embed the strings corresponding to the class labels or descriptions of the class labels using GPT3 and 
+using the resulting embedding vectors as the targets for training a neural network (NN), e.g., a CNN. Once the NN is trained, 
+it can be used to classify images by comparing their NN embedding to all the class label embeddings and assigning the closest
+one. 
 
 ## CIFAR100 label embeddings
 

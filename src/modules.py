@@ -37,6 +37,10 @@ def my_create_model(n_outputs):
 
 
 class BaseModule(LightningModule):
+    """
+    baseline taken from
+    https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/cifar10-baseline.html
+    """
     def __init__(self, optimizer='sgd',
                  lr=0.05,
                  weight_decay=5e-4,

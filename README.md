@@ -1,4 +1,4 @@
-# Using Large Language Model Embeddings as Targets 
+# Using large language model embeddings as targets 
 
 In this repo we investigated the utility of embedding the class labels of a classification task (e.g., CIFAR100) using GPT3.
 In particular, we were interested whether the GPT3 embeddings of class labels serve as better targets for classification models, and,

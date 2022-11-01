@@ -1,3 +1,4 @@
+wikipedia
 scikit-learn
 pandas
 torch==1.11.0

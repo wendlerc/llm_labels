@@ -4,6 +4,7 @@ from pytorch_lightning.callbacks.progress import TQDMProgressBar
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
+import torch
 
 import wandb
 import yaml
@@ -35,7 +36,7 @@ def main():
     parser.add_argument('--num_workers', default=6, type=int)
     parser.add_argument('--optimizer', default='sgd', type=str)
     # lightingmodule args
-    parser.add_argument('--method', default='ours', type=str, help='ours, baseline')
+    parser.add_argument('--method', default='ours', type=str, help='ours, projection, baseline')
     parser.add_argument('--scheduler', default=None, type=str, help='None, one_cycle')
     parser.add_argument('--normalize', action='store_true', help='whether to normalize to the unit sphere')
     parser.add_argument('--lr', default=0.05, type=float)
@@ -114,7 +115,8 @@ def main():
     trainer = pl.Trainer.from_argparse_args(args, logger=wandb_logger,
                                             callbacks=[checkpoint_callback,
                                                        es_callback, lr_monitor,
-                                                       TQDMProgressBar(refresh_rate=10)])
+                                                       TQDMProgressBar(refresh_rate=10)],
+                                            gpus=torch.cuda.device_count())
     try:
         trainer.fit(model, datamodule)
     except KeyboardInterrupt:

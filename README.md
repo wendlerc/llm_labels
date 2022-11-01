@@ -11,7 +11,7 @@ one.
 
 ## CIFAR100 label embeddings
 
-Looking at the class label embeddings using openai's `'text-similarity-babbage-001'` model 
+Looking at the class label embeddings using OPENAI's `'text-similarity-davinci-001'` model 
 it seems like the GPT3 embeddings contain information relevant to the task. Semantic similarity 
 between class labels seems to be captured by their embeddings reasonably well. This can be seen
 both from the crosscorrelation matrix of the class label embeddings:

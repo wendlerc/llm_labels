@@ -1,7 +1,7 @@
 # Using Large Language Model Embeddings as Targets 
 
-In this repo I investigated the utility of embedding the class labels of a classification task (e.g., CIFAR100) using GPT3.
-In particular, I was interested whether the GPT3 embeddings of class labels serve as better targets for classification models, and,
+In this repo we investigated the utility of embedding the class labels of a classification task (e.g., CIFAR100) using GPT3.
+In particular, we were interested whether the GPT3 embeddings of class labels serve as better targets for classification models, and,
 whether they can be used to obtain zero-shot performance. 
 
 The general approach is to embed the strings corresponding to the class labels or descriptions of the class labels using GPT3 and 
@@ -24,7 +24,7 @@ and from a TSNE plot:
 ## Better performance using GPT3 embeddings as targets?
 
 In my experiments using the GPT3 embeddings as targets did not improve the classification accuracy on CIFAR10 and CIFAR100.
-The modified model achieves about the same accuracy as the baseline from which I started. Here are some results for CIFAR100:
+The modified model achieves about the same accuracy as the baseline from which we started. Here are some results for CIFAR100:
 
 ![cifar100 result](./results/cifar100.png)
 
